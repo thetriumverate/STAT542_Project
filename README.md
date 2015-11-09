@@ -9,6 +9,7 @@ Useful RF links:
 - https://cran.r-project.org/web/packages/randomForest/randomForest.pdf
   	
 Useful Git resources:
+- https://help.github.com/articles/generating-ssh-keys/
 - http://stackoverflow.com/questions/10032461/git-keeps-asking-me-for-my-ssh-key-passphrase
 - https://git-scm.com/book/en/v2/Git-Basics-Working-with-Remotes
 - https://github.com/GarageGames/Torque2D/wiki/Cloning-the-repo-and-working-with-Git
