@@ -1,8 +1,6 @@
 # STAT542_Project
-### Final Project for STAT542: Springleaf Kaggle Competition
+### Final Project for STAT542: [Springleaf Kaggle Competition](https://www.kaggle.com/c/springleaf-marketing-response)
 
-Kaggle link: https://www.kaggle.com/c/springleaf-marketing-response
-  
 Useful RF links:
 - http://stackoverflow.com/questions/19170130/combining-random-forests-built-with-different-training-sets-in-r
 - https://onlinecourses.science.psu.edu/stat857/node/179
