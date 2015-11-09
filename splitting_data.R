@@ -7,6 +7,7 @@ train <- read.csv("~/train.csv")
 #this is sampling without replacement, used 17 folds because dim(train)[1] is divisible by 17
 #could create "replicate" folds using createMultiFolds()
 set.seed(12345)
+library(caret)
 train.resample.in <- createFolds(train$target, k=17, list=TRUE)
 
 #or create replicate folds by just changing the seed:
