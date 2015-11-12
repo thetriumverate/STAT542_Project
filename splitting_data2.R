@@ -28,12 +28,11 @@ length(c(bad.cols,log.cols))
 
 ## function that takes the data file and splits
 ## bootstrap samples with parameters
-## the first column is assumed to be the
-## response!
 
 # n -- number of samples
 # m -- size of samples
 # p -- number of features 
+
 
 split_data <- function(n, m, p){
   for (i in 1:n){
