@@ -1,7 +1,7 @@
 start.time <- proc.time()
 
 #reading in training data
-train <- read.csv("~/train.csv")
+train <- read.csv("train.csv")
 
 #getting row indices of samples
 #this is sampling without replacement, used 17 folds because dim(train)[1] is divisible by 17
@@ -28,3 +28,12 @@ end.time <-proc.time() - start.time
 end.time #2 minutes total... was run on computer with 8GB RAM and i7 processor
 
 #train.resample.out is a list of 17 matrices, all of equal dimensions...
+
+# It is faster to just store the data set as a .rdata file than to keep reading in
+# the .csv. It is also roughly 1/4th of the size. 
+#save(train,file="train.rdata")
+#test <-read.csv(file="test.csv",header=TRUE)
+#save(test,file="test.rdata")
+
+# To read the data in
+load("train.rdata")
