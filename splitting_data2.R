@@ -6,6 +6,7 @@
 
 setwd("~/Homework/")
 data <- read.csv("train_500.csv",row.names=1)
+data$target <- as.factor(data$target)
 train <- data[1:300,]
 test <- data[301:499,]
 
@@ -38,11 +39,11 @@ length(c(bad.cols,log.cols))
 
 split_data <- function(ntree, samp.size, mtry){
   for (i in 1:ntree){
-    fname = sprintf('bs_sample_%04.0f.csv', i)
+    fname = sprintf('bs_sample_%04.0f.Rdata', i)
     rows = sample(1:nrow(train), samp.size, replace=T)
     cols = c(sample(1:(ncol(train)-1), mtry, replace=F),ncol(train))
     tmp = train[rows,cols]
-    write.csv(tmp,file=fname)
+    save(tmp,file=fname)
   }
   rm(tmp); gc();
   cat('the current working directory is ', getwd(),'\n')
@@ -70,9 +71,8 @@ library(tree)
 
 get_trees <- function(ntree){
   tree.list <- lapply(1:ntree, function(x){
-    fname = sprintf('bs_sample_%04.0f.csv', x)
-    tmp <- read.csv(fname,row.names = 1)
-    tmp$target <- as.factor(tmp$target)
+    fname = sprintf('bs_sample_%04.0f.Rdata', x)
+    load(fname)
     tree(target~., tmp)
   })
   gc()
@@ -116,4 +116,3 @@ preds = ifelse(probs>.5,1,0)
 
 test.err <- 1 - sum(preds == test[,ncol(test)]) / length(preds)
 test.err
-
