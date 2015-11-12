@@ -5,7 +5,9 @@
 ## train.csv lives
 
 setwd("~/Homework/")
-train <- read.csv("train_500.csv",row.names=1)
+data <- read.csv("train_500.csv",row.names=1)
+train <- data[1:300,]
+test <- data[301:499,]
 
 ### Clean up the data ###########################
 
@@ -34,17 +36,17 @@ length(c(bad.cols,log.cols))
 # p -- number of features 
 
 
-split_data <- function(n, m, p){
-  for (i in 1:n){
+split_data <- function(ntree, samp.size, mtry){
+  for (i in 1:ntree){
     fname = sprintf('bs_sample_%04.0f.csv', i)
-    rows = sample(1:nrow(train), m, replace=T)
-    cols = c(sample(1:(ncol(train)-1), p, replace=T),ncol(train))
+    rows = sample(1:nrow(train), samp.size, replace=T)
+    cols = c(sample(1:(ncol(train)-1), mtry, replace=F),ncol(train))
     tmp = train[rows,cols]
     write.csv(tmp,file=fname)
   }
   rm(tmp); gc();
   cat('the current working directory is ', getwd(),'\n')
-  cat('check there for the',n, 'bootstrap samples \n')
+  cat('check there for the',ntree, 'bootstrap samples \n')
 }
 
 # you might notice that sometimes this results in
@@ -66,12 +68,12 @@ split_data <- function(n, m, p){
 
 library(tree)
 
-get_trees <- function(n){
-  tree.list <- lapply(1:n, function(x){
+get_trees <- function(ntree){
+  tree.list <- lapply(1:ntree, function(x){
     fname = sprintf('bs_sample_%04.0f.csv', x)
-    test <- read.csv(fname,row.names = 1)
-    test$target <- as.factor(test$target)
-    tree(target~., test)
+    tmp <- read.csv(fname,row.names = 1)
+    tmp$target <- as.factor(tmp$target)
+    tree(target~., tmp)
   })
   gc()
   cat('') # keeps the gc from printing anything
@@ -87,14 +89,13 @@ get_trees <- function(n){
 # samp.size -- size of bootstrap samples
 
 big_rf <- function(ntree, mtry, samp.size){
-  split_data(n=ntree, m=samp.size, p=mtry)
-  
+  split_data(ntree, samp.size, mtry)
+  Sys.sleep(1)
   get_trees(ntree)
 }
 
-trees <- big_rf(10,200,500) # call the actual FUN
+trees <- big_rf(31,200,500) # call the actual FUN
 
-trees[[1]]
 
 ## the idea now is that we have contructed a
 ## pseudo random forest with only loading 
@@ -103,4 +104,16 @@ trees[[1]]
 ## we randomize for each tree
 
 
+### get test error ##############################
+
+vec = rep(0,nrow(test))
+for (i in 1:length(trees)){
+  tmp = as.numeric(predict(trees[[i]],test[,-ncol(test)],type='class')) - 1
+  vec = vec + tmp
+}
+probs = vec/length(trees)
+preds = ifelse(probs>.5,1,0)
+
+test.err <- 1 - sum(preds == test[,ncol(test)]) / length(preds)
+test.err
 
