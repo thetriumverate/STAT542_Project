@@ -25,7 +25,7 @@
 
 Note: We should combine training and test sets before doing step 1, then separate again for step 2.
 
-##### References 
+### References 
 
 Useful RF links:
 - http://stackoverflow.com/questions/19170130/combining-random-forests-built-with-different-training-sets-in-r
