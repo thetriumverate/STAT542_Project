@@ -1,16 +1,14 @@
 # STAT542_Project
 
-### Final Project for STAT542: [Springleaf Kaggle Competition](https://www.kaggle.com/c/springleaf-marketing-response)
+##### Final Project for STAT542: [Springleaf Kaggle Competition](https://www.kaggle.com/c/springleaf-marketing-response)
 
-##### TO DO
+### TO DO
 
-1. **Clean and Prepare Data** (see[here](https://www.kaggle.com/darraghdog/springleaf-marketing-response/explore-springleaf/notebook))
+1. **Clean and Prepare Data** (see [here](https://www.kaggle.com/darraghdog/springleaf-marketing-response/explore-springleaf/notebook))
 	* Impute numeric Variables
 	* Collapse Levels of Categorical Variables (including parsing dates)
 	* Remove problem variables
 	* Remove Redundant Variables
-
-Note: We should combine training and test sets before doing step 1, then separate again for step 2.
 
 2. **Dimension Reduction**
 	* Factor analysis/PCA (although Brieman says "dimensionality can be a blessing")
@@ -22,9 +20,10 @@ Note: We should combine training and test sets before doing step 1, then separat
 	* Combine trees into forest
 
 4. **Benchmarking**
-	* Check our algorithm vs. Random forest on subset
+	* Check our algorithm vs. Random Forest on subset
 	* other methods
 
+Note: We should combine training and test sets before doing step 1, then separate again for step 2.
 
 ##### References 
 
