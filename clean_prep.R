@@ -67,7 +67,7 @@ train_date = do.call(cbind.data.frame, train_date) #converts train_date to df
 train_date_month <- data.frame(matrix(0,nrow=dim(train_date)[1],ncol=dim(train_date)[2]))
 train_date_year <- data.frame(matrix(0,nrow=dim(train_date)[1],ncol=dim(train_date)[2]))
 
-#getting months and year variables, right now they are numeric
+#getting months and year variables
 for(i in 1:(dim(train_date)[2]))
 {
   train_date_month[,i] = as.factor(month(as.POSIXlt(train_date[,i], format="%d%B%y:%H:%M:%S")))
