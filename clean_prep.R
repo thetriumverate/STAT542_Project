@@ -51,15 +51,8 @@ train_fact <- as.data.frame(train_fact)
 #getting date variables from train_fact
 train_date = Filter(function(u) any(grepl('JAN1|FEB1|APR1',u)), train_fact)
 
-#taking date variables out of train_fact, don't know if needed
-train_fact = train_fact[, !colnames(train_fact) %in% colnames(train_date)]
-dim(train_fact)
-
 #intermediate conversion step
 train_date = sapply(train_date, function(x) strptime(x, "%d%B%y:%H:%M:%S"))
-
-#recommend saving objects here
-#save(list = ls(all.names = TRUE), file = "date_vars_objects.RData", envir = .GlobalEnv)
 
 train_date = do.call(cbind.data.frame, train_date) #converts train_date to df
 
@@ -74,7 +67,7 @@ for(i in 1:(dim(train_date)[2]))
   train_date_year[,i] = as.factor(year(as.POSIXlt(train_date[,i], format="%d%B%y:%H:%M:%S")))
 }
 
-#taking old date variables out of all_data 
+######### taking old date variables out of all_data ####################
 all_data = all_data[, !colnames(all_data) %in% colnames(train_date)]
 dim(all_data)
 
@@ -88,20 +81,17 @@ names(train_date_year) <- paste(names(train_date),"y", sep = "_")
 #getting states variables
 state_vars <- Filter(function(u) any(grepl('TX|WV|AZ',u)), train_fact)
 dim(state_vars)
-state_vars <- state_vars[,2:3]
 
-#taking state variables out of train_fact, dont know if needed
-train_fact = train_fact[, !colnames(train_fact) %in% colnames(state_vars)]
-dim(train_fact)
-
-#taking state variables out of all_data
+#taking state variables out of all_data (this gets rid of the two state varaibles and the "city" variable with tons of levels)
 all_data = all_data[, !colnames(all_data) %in% colnames(state_vars)]
 dim(all_data)
+
+state_vars <- state_vars[,2:3]
 
 #states broken up into regions according to census: http://www2.census.gov/geo/pdfs/maps-data/maps/reference/us_regdiv.pdf
 
 state_vars$VAR_0237_new <- state_vars$VAR_0237
-levels(state_vars$VAR_0237_new) <- c(levels(state_vars$VAR_0237_new), "NE","MA","ENC","WNC","SA","ESC","WSC","MT","PC","Other",NA)
+levels(state_vars$VAR_0237_new) <- c(levels(state_vars$VAR_0237_new), "NE","MA","ENC","WNC","SA","ESC","WSC","MT","PC","Other","Missing")
 state_vars[state_vars$VAR_0237 %in% c("CT", "ME","MA","NH","RI","VT"), "VAR_0237_new"] <- "NE"
 state_vars[state_vars$VAR_0237 %in% c("NJ", "NY","PA"), "VAR_0237_new"] <- "MA"
 state_vars[state_vars$VAR_0237 %in% c("IN", "IL","MI","OH","WI"), "VAR_0237_new"] <- "ENC"
@@ -112,10 +102,10 @@ state_vars[state_vars$VAR_0237 %in% c("AR", "LA","OK","TX"), "VAR_0237_new"] <- 
 state_vars[state_vars$VAR_0237 %in% c("AZ", "CO","ID","NM","MT","UT","NV","WY"), "VAR_0237_new"] <- "MT"
 state_vars[state_vars$VAR_0237 %in% c("AK", "CA","HI","OR","WA"), "VAR_0237_new"] <- "PC"
 state_vars[state_vars$VAR_0237 %in% c("PR","EE","RR","RN","GS"), "VAR_0237_new"] <- "Other"
-state_vars[state_vars$VAR_0237 %in% c("-1",""), "VAR_0237_new"] <- NA;
+state_vars[state_vars$VAR_0237 %in% c("-1",""), "VAR_0237_new"] <- "Missing";
 
 state_vars$VAR_0274_new <- state_vars$VAR_0274
-levels(state_vars$VAR_0274_new) <- c(levels(state_vars$VAR_0274_new), "NE","MA","ENC","WNC","SA","ESC","WSC","MT","PC","Other",NA)
+levels(state_vars$VAR_0274_new) <- c(levels(state_vars$VAR_0274_new), "NE","MA","ENC","WNC","SA","ESC","WSC","MT","PC","Other","Missing")
 state_vars[state_vars$VAR_0274 %in% c("CT", "ME","MA","NH","RI","VT"), "VAR_0274_new"] <- "NE"
 state_vars[state_vars$VAR_0274 %in% c("NJ", "NY","PA"), "VAR_0274_new"] <- "MA"
 state_vars[state_vars$VAR_0274 %in% c("IN", "IL","MI","OH","WI"), "VAR_0274_new"] <- "ENC"
@@ -126,13 +116,16 @@ state_vars[state_vars$VAR_0274 %in% c("AR", "LA","OK","TX"), "VAR_0274_new"] <- 
 state_vars[state_vars$VAR_0274 %in% c("AZ", "CO","ID","NM","MT","UT","NV","WY"), "VAR_0274_new"] <- "MT"
 state_vars[state_vars$VAR_0274 %in% c("AK", "CA","HI","OR","WA"), "VAR_0274_new"] <- "PC"
 state_vars[state_vars$VAR_0274 %in% c("PR","EE","RR","RN","GS"), "VAR_0274_new"] <- "Other"
-state_vars[state_vars$VAR_0274 %in% c("-1",""), "VAR_0274_new"] <- NA;
+state_vars[state_vars$VAR_0274 %in% c("-1",""), "VAR_0274_new"] <- "Missing";
 
+state_vars$VAR_0237_new <- drop.levels(state_vars$VAR_0237_new)
+state_vars$VAR_0274_new <- drop.levels(state_vars$VAR_0274_new)
+state_vars <- state_vars[,3:4]
 
 #################################################
 
-#add in new factor variables (train_date_month, train_date_year, state_vars[,3:4]) to all_data
-all_data <- data.frame(all_data, train_date_month, train_date_year, state_vars[,3:4])
+#add in new factor variables (train_date_month, train_date_year, state_vars) to all_data
+all_data <- data.frame(all_data, train_date_month, train_date_year, state_vars)
 
 ### LOGICAL VARIABLES ###########################
 
