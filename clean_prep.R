@@ -3,6 +3,9 @@ setwd("~/Homework/")
 set.seed(1738)
 library(gdata)
 library(lubridate)
+library(readr)
+library(dplyr)
+library(randomForest)
 
 ### Read in Data ################################
 
@@ -127,55 +130,77 @@ state_vars <- state_vars[,3:4]
 #add in new factor variables (train_date_month, train_date_year, state_vars) to all_data
 all_data <- data.frame(all_data, train_date_month, train_date_year, state_vars)
 
-### LOGICAL VARIABLES ###########################
 
-str(all_data[,which(sapply(all_data, class) == "logical")])
+######## Exploring values to change to NA #############################
 
-# looks like we can drop them all too
+train_numr = all_data[, sapply(all_data, is.numeric)]
 
+#set.seed(100)
+train_numr_samp = train_numr[,sample(1:ncol(train_numr),100)]
+str(lapply(train_numr_samp[,sample(1:100)], unique))
+
+hist(all_data$VAR_1215)
+hist(all_data$VAR_0979)
+hist(all_data$VAR_1251)
+
+table(all_data$VAR_1215)
+table(all_data$VAR_0979)
+table(all_data$VAR_1251)
+
+#it looks like 999999996 - 999999999 are some sort of other indicator. 
+#These values only occur in int class variables (there's only 13 numeric variables)
+#I'm also not finding -1 when -99999 is present, so these could theoretically mean missing or some other indicator from different data locations/servers.
+#However NA's are present in variables with -1 as a level
+
+############## IMPUTATION ##########################################################
+
+load("~/checkpoint1.RData")
 bad.vars <- which(sapply(all_data,class) =='logical')
 all_data <- all_data[,-bad.vars]
 gc()
 
 
-### INTEGER VARIABLES ###########################
-
-str(lapply(all_data[,which(sapply(all_data, class) == "integer")], unique))
-
-### remove unreasonable values ###
-### remove unreasonable values ###
-### remove unreasonable values ###
-### remove unreasonable values ###
-### remove unreasonable values ###
-
-
-### impute NAs ###
-### impute NAs ###
-### impute NAs ###
-### impute NAs ###
-### impute NAs ###
-### impute NAs ###
-
-
-### NUMERIC VARIABLES ########################### 
-
-str(lapply(all_data[,which(sapply(all_data, class) == "numeric")], unique))
-
-### impute NAs ###
-### impute NAs ###
-### impute NAs ###
-### impute NAs ###
-### impute NAs ###
-### impute NAs ###
-
-
-
-### REMOVE CONSTANTS ############################
-
 col_ct = sapply(all_data, function(x) length(unique(x)))
 bad.vars <- which(col_ct ==1)
 all_data <- all_data[,-bad.vars]
 gc()
+
+#I tried converting our factors to characters so that when I save to csv we don't have factors convert to numeric
+all_data[sapply(all_data, is.factor)] <- lapply(all_data[sapply(all_data, is.factor)], as.character)
+#This ended up not working 
+
+dtypes <- sapply(all_data, class)
+unique(dtypes)
+
+write.csv(all_data, file="Checkpoint2.csv") #you can use the link below for this file below if you like
+#here is the location of Checkpoint2.csv: https://uofi.box.com/s/qtpvgdkql1wyylvfkygz830dk2d0dr32
+
+rm(list=ls())
+all_data <- read_csv("Checkpoint2.csv",na=c("","NA"," ","NULL",-1,-99999,999999999,999999998,999999997,999999996))
+
+dtypes <- sapply(all_data, class)
+unique(dtypes)
+
+#converting characters to factors for use in na.roughfix
+all_data[sapply(all_data, is.character)] <- lapply(all_data[sapply(all_data, is.character)], as.factor)
+#all_data[sapply(all_data, is.integer)] <- lapply(all_data[sapply(all_data, is.integer)], as.numeric)
+
+unique(dtypes)
+str(all_data[,which(sapply(all_data, class) == "factor")])
+
+#took me forever to realize na.roughfix wasn't working because we had a couple columns that were completely null...
+allmisscols = sapply(all_data, function(x)all(is.na(x)))
+colswithallmiss <-names(allmisscols[allmisscols>0]) 
+colswithallmiss 
+
+#removing null variables
+col_ct = sapply(all_data, function(x) length(unique(x)))
+bad.vars <- which(col_ct ==1)
+all_data <- all_data[,-bad.vars]
+gc()
+
+all_data = na.roughfix(all_data)
+#I believe there are no NA's, all the functions I used to check ran out of mememory lol.
 
 ### REMOVE REDUNDANT VARIABLES ##################
 
