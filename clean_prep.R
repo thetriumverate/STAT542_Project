@@ -122,7 +122,7 @@ state_vars$VAR_0237_new <- drop.levels(state_vars$VAR_0237_new)
 state_vars$VAR_0274_new <- drop.levels(state_vars$VAR_0274_new)
 state_vars <- state_vars[,3:4]
 
-#################################################
+##########CHECKPOINT 1#################################################
 
 #add in new factor variables (train_date_month, train_date_year, state_vars) to all_data
 all_data <- data.frame(all_data, train_date_month, train_date_year, state_vars)
