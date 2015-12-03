@@ -1,19 +1,23 @@
-setwd("~/Homework/")
+#setwd("~/Homework/")
 #setwd("~/UIUC/STAT542") Noah's wd
+setwd("~/Git/Stat542") # Zach's wd
 set.seed(1738)
 library(gdata)
 library(lubridate)
 library(readr)
 library(dplyr)
 library(randomForest)
+library(caret)
 
 ### Read in Data ################################
 
-train <- read.csv("train.csv",row.names=1)
+#train <- read.csv("train.csv",row.names=1)
+load("train.rdata")
 train$data_inj = 0; #this indicator tells us which data set the row belongs to (0 for train, 1 for test)
 
-test <- read.csv("test.csv",row.names=1)
-test$target = NA;
+#test <- read.csv("test.csv",row.names=1)
+load("test.rdata")
+test$target = 999999; # Set to arbitrary value 
 test$data_inj = 1;
 
 #combining data sets
@@ -154,7 +158,6 @@ table(all_data$VAR_1251)
 
 ############## IMPUTATION ##########################################################
 
-load("~/checkpoint1.RData")
 bad.vars <- which(sapply(all_data,class) =='logical')
 all_data <- all_data[,-bad.vars]
 gc()
@@ -166,18 +169,39 @@ all_data <- all_data[,-bad.vars]
 gc()
 
 #I tried converting our factors to characters so that when I save to csv we don't have factors convert to numeric
-all_data[sapply(all_data, is.factor)] <- lapply(all_data[sapply(all_data, is.factor)], as.character)
+##all_data[sapply(all_data, is.factor)] <- lapply(all_data[sapply(all_data, is.factor)], as.character)
 #This ended up not working 
 
 dtypes <- sapply(all_data, class)
 unique(dtypes)
 
-write.csv(all_data, file="Checkpoint2.csv") #you can use the link below for this file below if you like
+##write.csv(all_data, file="Checkpoint2.csv") #you can use the link below for this file below if you like
 #here is the location of Checkpoint2.csv: https://uofi.box.com/s/qtpvgdkql1wyylvfkygz830dk2d0dr32
 
-rm(list=ls())
+#rm(list=ls())
+# We need a factor indicator to re-convert the factor variables that get 
+# miscoded using read_csv
+factor_ind <- which(sapply(all_data,class)=="factor")
+# We also need just the numeric values for the indicator
+factor_ind2 <- unname(factor_ind)
 all_data <- read_csv("Checkpoint2.csv",na=c("","NA"," ","NULL",-1,-99999,999999999,999999998,999999997,999999996))
 
+
+all_data_test <- all_data
+
+# Use when I mess up the all_data file and need to restore it
+all_data <- all_data_test
+
+# Store the names of the factors
+factor_names <- names(factor_ind)
+
+# Loop through each factor name and append it to all_data$ so we can reference it properly.
+# Convert it into a factor. Assign it to the corresponding variable in all_data.
+for(i in 1:length(factor_names)){
+  all_data[,factor_ind2[i]] <- as.factor(eval(parse(text=paste("all_data",factor_names[i],sep="$")))) 
+}
+
+# We can check and see that we do have factors once again
 dtypes <- sapply(all_data, class)
 unique(dtypes)
 
@@ -202,9 +226,52 @@ gc()
 all_data = na.roughfix(all_data)
 #I believe there are no NA's, all the functions I used to check ran out of mememory lol.
 
+# Store cleaned data so I don't have to do this garbage again
+cleaned_data <- all_data
+save(cleaned_data,file="cleaned_data.rdata")
+
+
 ### REMOVE REDUNDANT VARIABLES ##################
 
+# Split the data back into training/test data sets. This will 
+# prevent us from making any variable selection decisions
+# from the test set.
+train_ind <- ifelse(cleaned_data$target!=999999,TRUE,FALSE)
+cleaned_training <- cleaned_data[train_ind,]
 
+# Grab numeric variables
+dtypes <- sapply(cleaned_training, class)
+unique(dtypes)
+factor_ind <- unname(which(sapply(cleaned_training, class) == "factor"))
+numeric_data <- cleaned_training[,-factor_ind]
+
+# There appear to be some constant variables that came through. Remove them.
+standard_dev <- apply(numeric_data,MARGIN=2,sd)
+zero_variance <- unname(which(standard_dev==0))
+numeric_data <- numeric_data[,-zero_variance]
+
+# Construct correlation matrix
+corr_matrix <- cor(numeric_data)
+save(corr_matrix,file="corr_matrix.rdata")
+
+# Use findCorrelation function to retrieve the correlated variable indices
+# and then remove them from the data set
+corr_vars <- findCorrelation(corr_matrix,0.9)
+uncorr_vars <- numeric_data[,-corr_vars]
+
+# Join numeric data back with factor data
+reduced_data <- cbind(uncorr_vars,cleaned_training[,factor_ind])
+
+
+#### Principal Component Test
+# If we want to reduce dimensions further, we can use princ comps
+pcs <- princomp(x=uncorr_vars)
+
+# Feng has code to select the M princ comps that explain X% of the data.
+# We can dig this up if deemed necessary.
+
+# Final data set we want to work with:
+save(reduced_data,file="reduced_data.rdata")
 
 ### WRITE TO DISK ###############################
 
