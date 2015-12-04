@@ -1,25 +1,32 @@
 ### Read in Data ################################
-
+setwd('~/Homework/') # andrew's wd
+library(caret)
 load("cleaned_data.rdata")
 
-### REMOVE REDUNDANT VARIABLES ##################
+### REMOVE REDUNDANT VARIABLES ######################################
 
 # Split the data back into training/test data sets. This will 
 # prevent us from making any variable selection decisions
 # from the test set.
-train_ind <- ifelse(cleaned_data$target!=999999,TRUE,FALSE)
-cleaned_training <- cleaned_data[train_ind,]
+
+cleaned_training <- cleaned_data[cleaned_data$data_inj == 0,]
+cleaned_test <- cleaned_data[cleaned_data$data_inj == 1,]
+rm(cleaned_data)
+
+cleaned_training$data_inj <- NULL
+cleaned_test$data_inj <- NULL
+# split into X and y
+cleaned_training_X <- cleaned_training
+cleaned_training_X$target <- NULL
+cleaned_training_y <- cleaned_training$target
+
 
 # Grab numeric variables
-dtypes <- sapply(cleaned_training, class)
+dtypes <- sapply(cleaned_training_X, class)
 unique(dtypes)
-factor_ind <- unname(which(sapply(cleaned_training, class) == "factor"))
-numeric_data <- cleaned_training[,-factor_ind]
+factor_ind <- unname(which(sapply(cleaned_training_X, class) == "factor"))
+numeric_data <- cleaned_training_X[,-factor_ind]
 
-# There appear to be some constant variables that came through. Remove them.
-standard_dev <- apply(numeric_data,MARGIN=2,sd)
-zero_variance <- unname(which(standard_dev==0))
-numeric_data <- numeric_data[,-zero_variance]
 
 # Construct correlation matrix
 corr_matrix <- cor(numeric_data)
@@ -27,27 +34,79 @@ save(corr_matrix,file="corr_matrix.rdata")
 
 # Use findCorrelation function to retrieve the correlated variable indices
 # and then remove them from the data set
-corr_vars <- findCorrelation(corr_matrix,0.9)
-uncorr_vars <- numeric_data[,-corr_vars]
+corr_vars <- findCorrelation(corr_matrix,.9)
+rm(corr_matrix)
+numeric_data <- numeric_data[,-corr_vars]
 
 # Join numeric data back with factor data
-reduced_data <- cbind(uncorr_vars,cleaned_training[,factor_ind])
+reduced_data_train <- cbind(numeric_data,cleaned_training_X[,factor_ind])
+rm(cleaned_training_X)
+rm(numeric_data)
+reduced_data_train$target <- cleaned_training_y
 
 
-#### Principal Component Test
+# remove the variables from test that we removed from training
+reduced_data_test <- cleaned_test[,colnames(reduced_data_train)]
+reduced_data_test$target <- NULL
+
+
+
+### write the reduced training and test to disk
+
+save(reduced_data_test, file='reduced_data_test.rdata')
+save(reduced_data_train, file='reduced_data_train.rdata')
+rm(reduced_data_train)
+rm(reduced_data_test)
+gc()
+
+
+### PRINCIPAL COMPONENTS ############################################
+
+cleaned_data_X <- cleaned_training
+cleaned_data_X$target <- NULL
+cleaned_data_y <- cleaned_training$target
+
 # If we want to reduce dimensions further, we can use princ comps
-pcs <- princomp(x=uncorr_vars)
+# but we can only use them on numeric variables
+factor_ind <- unname(which(sapply(cleaned_data_X, class) == "factor"))
+numeric_data <- cleaned_data_X[,-factor_ind]
 
-# Feng has code to select the M princ comps that explain X% of the data.
-# We can dig this up if deemed necessary.
 
-# Final data set we want to work with:
-save(reduced_data,file="reduced_data.rdata")
+pcs <- princomp(numeric_data)
 
-### WRITE TO DISK ###############################
 
-rm(list=setdiff(ls(), "all_data")) #remove all objects but data set containing modified train & test sets
-save(list = ls(all.names = TRUE), file = "name_yo_object.RData", envir = .GlobalEnv) #save all_data to rdata file, I feel like this is faster to load in
-#save(all_data,file="data_clean.csv")
+# select the M prin comps that explain 99% of the variance
+total.var = sum(pcs$sd^2)
+pct.var = pcs$sd^2/total.var
+n.99 <- which(cumsum(pct.var)>= .99)[1]
+
+# transform the numeric training vars
+num_train.transformed <- pcs$scores[,1:n.99]
+
+# recompose the data frame
+transformed_data_train <- cleaned_training[,factor_ind]
+transformed_data_train$pc1 <- num_train.transformed
+transformed_data_train$target <- cleaned_data_y
+
+
+# do it to the test set too
+cleaned_data_X_test <- cleaned_test
+cleaned_data_X_test$target <- NULL
+cleaned_data_y_test <- cleaned_test$target
+
+factor_ind_test <- unname(which(sapply(cleaned_data_X_test, class) == "factor"))
+numeric_data_test <- cleaned_data_X_test[,-factor_ind_test]
+
+num_test.transformed <- predict(pcs,numeric_data_test)[,1:n.99]
+
+transformed_data_test<- cleaned_data_X_test[,factor_ind_test]
+transformed_data_test$pc1 <- num_test.transformed
+
+
+
+# PCA data set we want to work with:
+save(transformed_data_train,file="PCA_data_train.rdata")
+save(transformed_data_test,file="PCA_data_test.rdata")
+rm(list=ls())
 
 

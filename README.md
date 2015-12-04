@@ -30,9 +30,13 @@
 	* outputs final file *cleaned_data.rdata*
 	* ~24 minute runtime
 
-2. `dim_reduction.R`
-	* Removes highly correlated variables
-	* Performs PCA
+2. `dim_reduction.R` - **in progress**
+	* again must change the working directory to where *cleaned_data.rdata* lives
+	* Removes highly correlated variables and performs PCA
+	* outputs intermediate file *corr_matrix.rdata*
+	* outputs final files *reduced_data_train.rdata* and *reduced_data_test.rdata* which correspond to the data with redundant variables removed
+	* outputs final files *PCA_data_train.rdata* and *PCA_data_test* which correspond to the PCA transformed data (numeric variables only)
+	* ~ 28 minute runtime
 
 ### References 
 
