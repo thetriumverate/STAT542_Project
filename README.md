@@ -23,7 +23,16 @@
 	* Check our algorithm vs. Random Forest on subset
 	* other methods
 
-Note: We should combine training and test sets before doing step 1, then separate again for step 2.
+### CODE
+1. `clean_prep.R`
+	* must change the working directory in script (but that's it) to the location of *train.csv* and *test.csv*
+	* outputs intermediate files *train.rdata*, *test.rdata*, *Checkpoint2.csv*
+	* outputs final file *cleaned_data.rdata*
+	* ~24 minute runtime
+
+2. `dim_reduction.R`
+	* Removes highly correlated variables
+	* Performs PCA
 
 ### References 
 

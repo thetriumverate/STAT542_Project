@@ -1,27 +1,42 @@
-#setwd("~/Homework/")
-#setwd("~/UIUC/STAT542") Noah's wd
-setwd("~/Git/Stat542") # Zach's wd
+setwd("~/Homework/") # andrew's wd
+#setwd("~/UIUC/STAT542") # Noah's wd
+#setwd("~/Git/Stat542") # Zach's wd
+
 set.seed(1738)
 library(gdata)
 library(lubridate)
-library(readr)
-library(dplyr)
 library(randomForest)
-library(caret)
+
 
 ### Read in Data ################################
 
-#train <- read.csv("train.csv",row.names=1)
+### Stores CSVs as Rdata for faster loading
+
+if (!file.exists('train.rdata')){ 
+  train <- read.csv("train.csv",row.names=1)
+  save(train, file='train.rdata')
+  rm(train)
+} 
+
+if (!file.exists('test.rdata')){
+  test <- read.csv("test.csv",row.names=1)
+  save(test, file='test.rdata')
+  rm(test)
+}
+
+### loads in the rdata files and combines them into all_data
+
 load("train.rdata")
 train$data_inj = 0; #this indicator tells us which data set the row belongs to (0 for train, 1 for test)
 
-#test <- read.csv("test.csv",row.names=1)
 load("test.rdata")
 test$target = 999999; # Set to arbitrary value 
 test$data_inj = 1;
 
 #combining data sets
 all_data <- rbind(train, test)
+rm(list=setdiff(ls(), "all_data"))
+gc()
 
 ### inspect datatypes ###########################
 
@@ -32,15 +47,7 @@ unique(dtypes)
 
 str(all_data[,which(sapply(all_data, class) == "factor")])
 
-# lots of the variables have 1 label plus missing
-# in fact, thats every var with 2 classes
-# so we can remove them 
-
-bad.vars <- which(sapply(all_data,nlevels) ==2)
-all_data <- all_data[,-bad.vars]
-gc()
-
-# we also notice the missing values are
+# we notice the missing values are
 # represented by "", -1, or []
 # so replace with NA
 
@@ -50,6 +57,23 @@ train_fact[train_fact == "[]"] = NA
 train_fact[train_fact == ""] = NA
 all_data[,which(sapply(all_data, class) == "factor")] <- drop.levels(train_fact)
 gc()
+
+# check to make sure it worked
+str(all_data[,which(sapply(all_data, class) == "factor")])
+# now those look like nice factor vars
+
+# although there are still some with only 1 level
+
+bad.vars <- which(sapply(all_data,nlevels) ==1)
+bad.vars
+all_data <- all_data[,-bad.vars]
+gc()
+
+# check again to make sure it worked
+str(all_data[,which(sapply(all_data, class) == "factor")])
+
+# now they look great. we'll get the one with 0 levels
+# and the NAs later
 
 ### PARSING DATE VARIABLES ############################
 
@@ -81,12 +105,13 @@ dim(all_data)
 #renaming new date variables
 names(train_date_month) <- paste(names(train_date),"m", sep = "_")
 names(train_date_year) <- paste(names(train_date),"y", sep = "_")
-
+rm(train_date)
 
 ### PARSING STATE VARIABLES ############################
 
 #getting states variables
 state_vars <- Filter(function(u) any(grepl('TX|WV|AZ',u)), train_fact)
+rm(train_fact)
 dim(state_vars)
 
 #taking state variables out of all_data (this gets rid of the two state varaibles and the "city" variable with tons of levels)
@@ -129,44 +154,54 @@ state_vars$VAR_0237_new <- drop.levels(state_vars$VAR_0237_new)
 state_vars$VAR_0274_new <- drop.levels(state_vars$VAR_0274_new)
 state_vars <- state_vars[,3:4]
 
-##########CHECKPOINT 1#################################################
+
 
 #add in new factor variables (train_date_month, train_date_year, state_vars) to all_data
 all_data <- data.frame(all_data, train_date_month, train_date_year, state_vars)
+rm(train_date_month)
+rm(train_date_year)
+# check to make sure it all looks good
+str(all_data[,which(sapply(all_data, class) == "factor")])
 
+# we know we can remove the factors with 0 and 1 levels
+# which are VAR_0044 and VAR_0204_y
+
+myvars <- names(all_data) %in% c('VAR_0044', 'VAR_0204_y')
+all_data <- all_data[!myvars]
+
+# we also need to drop those with > 32 levels
+bad.vars <- which(sapply(all_data,nlevels) >32)
+all_data <- all_data[-bad.vars]
 
 ######## Exploring values to change to NA #############################
 
 train_numr = all_data[, sapply(all_data, is.numeric)]
 
-#set.seed(100)
 train_numr_samp = train_numr[,sample(1:ncol(train_numr),100)]
-str(lapply(train_numr_samp[,sample(1:100)], unique))
+str(lapply(train_numr_samp, unique))
 
-hist(all_data$VAR_1215)
-hist(all_data$VAR_0979)
-hist(all_data$VAR_1251)
+rm(train_numr)
+rm(train_numr_samp)
 
-table(all_data$VAR_1215)
-table(all_data$VAR_0979)
-table(all_data$VAR_1251)
+# hist(all_data$VAR_1215)
+# hist(all_data$VAR_0979)
+# hist(all_data$VAR_1251)
+# hist(all_data$VAR_1113)
+# hist(all_data$VAR_1682)
+# 
+# 
+# table(all_data$VAR_1215)
+# table(all_data$VAR_0979)
+# table(all_data$VAR_1251)
+
 
 #it looks like 999999996 - 999999999 are some sort of other indicator. 
 #These values only occur in int class variables (there's only 13 numeric variables)
 #I'm also not finding -1 when -99999 is present, so these could theoretically mean missing or some other indicator from different data locations/servers.
 #However NA's are present in variables with -1 as a level
-
+# basically it is one awful mess
 ############## IMPUTATION ##########################################################
 
-bad.vars <- which(sapply(all_data,class) =='logical')
-all_data <- all_data[,-bad.vars]
-gc()
-
-
-col_ct = sapply(all_data, function(x) length(unique(x)))
-bad.vars <- which(col_ct ==1)
-all_data <- all_data[,-bad.vars]
-gc()
 
 #I tried converting our factors to characters so that when I save to csv we don't have factors convert to numeric
 ##all_data[sapply(all_data, is.factor)] <- lapply(all_data[sapply(all_data, is.factor)], as.character)
@@ -175,108 +210,67 @@ gc()
 dtypes <- sapply(all_data, class)
 unique(dtypes)
 
-##write.csv(all_data, file="Checkpoint2.csv") #you can use the link below for this file below if you like
-#here is the location of Checkpoint2.csv: https://uofi.box.com/s/qtpvgdkql1wyylvfkygz830dk2d0dr32
 
-#rm(list=ls())
+
+### WRITE CHECKPOINT ############################
+
+# a little silly, but here we are writing the 
+# data file out to a csv so we can read it back
+# in with the NAs coded properly
+
+write.csv(all_data, file="Checkpoint2.csv") #you can use the link below for this file below if you like
+# here is the location of Checkpoint2.csv: https://uofi.box.com/s/qtpvgdkql1wyylvfkygz830dk2d0dr32
+
 # We need a factor indicator to re-convert the factor variables that get 
 # miscoded using read_csv
 factor_ind <- which(sapply(all_data,class)=="factor")
-# We also need just the numeric values for the indicator
-factor_ind2 <- unname(factor_ind)
-all_data <- read_csv("Checkpoint2.csv",na=c("","NA"," ","NULL",-1,-99999,999999999,999999998,999999997,999999996))
+rm(list=setdiff(ls(), "factor_ind"))
 
 
-all_data_test <- all_data
+### END WRITE CHECKPOINT ########################
 
-# Use when I mess up the all_data file and need to restore it
-all_data <- all_data_test
+
+### Read back in the data 
+
+all_data <- read.csv("Checkpoint2.csv",
+                     na=c("","NA"," ","NULL",-1,-99999,999999999,999999998,999999997,999999996),
+                     row.names=1)
 
 # Store the names of the factors
 factor_names <- names(factor_ind)
 
-# Loop through each factor name and append it to all_data$ so we can reference it properly.
-# Convert it into a factor. Assign it to the corresponding variable in all_data.
-for(i in 1:length(factor_names)){
-  all_data[,factor_ind2[i]] <- as.factor(eval(parse(text=paste("all_data",factor_names[i],sep="$")))) 
-}
+# convert back to factors
+all_data[,factor_names] <- lapply(all_data[,factor_names] , factor)
+
+# get rid of the logical variables, they are useless
+bad.vars <- which(sapply(all_data,class) =='logical')
+all_data <- all_data[,-bad.vars]
+gc()
 
 # We can check and see that we do have factors once again
 dtypes <- sapply(all_data, class)
 unique(dtypes)
 
-#converting characters to factors for use in na.roughfix
-all_data[sapply(all_data, is.character)] <- lapply(all_data[sapply(all_data, is.character)], as.factor)
-#all_data[sapply(all_data, is.integer)] <- lapply(all_data[sapply(all_data, is.integer)], as.numeric)
-
-unique(dtypes)
 str(all_data[,which(sapply(all_data, class) == "factor")])
 
-#took me forever to realize na.roughfix wasn't working because we had a couple columns that were completely null...
-allmisscols = sapply(all_data, function(x)all(is.na(x)))
-colswithallmiss <-names(allmisscols[allmisscols>0]) 
-colswithallmiss 
 
-#removing null variables
+### NA FIX (FINALLY) ############################
+
+all_data = na.roughfix(all_data)
+
+# checking for NAs
+na_count <- sapply(all_data, function(y) sum(which(is.na(y)))) # na's by column
+sum(na_count) # total na's
+
+#removing constant variables
 col_ct = sapply(all_data, function(x) length(unique(x)))
 bad.vars <- which(col_ct ==1)
 all_data <- all_data[,-bad.vars]
 gc()
 
-all_data = na.roughfix(all_data)
-#I believe there are no NA's, all the functions I used to check ran out of mememory lol.
-
 # Store cleaned data so I don't have to do this garbage again
 cleaned_data <- all_data
+rm(all_data)
 save(cleaned_data,file="cleaned_data.rdata")
-
-
-### REMOVE REDUNDANT VARIABLES ##################
-
-# Split the data back into training/test data sets. This will 
-# prevent us from making any variable selection decisions
-# from the test set.
-train_ind <- ifelse(cleaned_data$target!=999999,TRUE,FALSE)
-cleaned_training <- cleaned_data[train_ind,]
-
-# Grab numeric variables
-dtypes <- sapply(cleaned_training, class)
-unique(dtypes)
-factor_ind <- unname(which(sapply(cleaned_training, class) == "factor"))
-numeric_data <- cleaned_training[,-factor_ind]
-
-# There appear to be some constant variables that came through. Remove them.
-standard_dev <- apply(numeric_data,MARGIN=2,sd)
-zero_variance <- unname(which(standard_dev==0))
-numeric_data <- numeric_data[,-zero_variance]
-
-# Construct correlation matrix
-corr_matrix <- cor(numeric_data)
-save(corr_matrix,file="corr_matrix.rdata")
-
-# Use findCorrelation function to retrieve the correlated variable indices
-# and then remove them from the data set
-corr_vars <- findCorrelation(corr_matrix,0.9)
-uncorr_vars <- numeric_data[,-corr_vars]
-
-# Join numeric data back with factor data
-reduced_data <- cbind(uncorr_vars,cleaned_training[,factor_ind])
-
-
-#### Principal Component Test
-# If we want to reduce dimensions further, we can use princ comps
-pcs <- princomp(x=uncorr_vars)
-
-# Feng has code to select the M princ comps that explain X% of the data.
-# We can dig this up if deemed necessary.
-
-# Final data set we want to work with:
-save(reduced_data,file="reduced_data.rdata")
-
-### WRITE TO DISK ###############################
-
-rm(list=setdiff(ls(), "all_data")) #remove all objects but data set containing modified train & test sets
-save(list = ls(all.names = TRUE), file = "name_yo_object.RData", envir = .GlobalEnv) #save all_data to rdata file, I feel like this is faster to load in
-#save(all_data,file="data_clean.csv")
-
-
+rm(list=ls())
+gc()
