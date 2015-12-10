@@ -42,7 +42,7 @@ gc()
 
 dtypes <- sapply(all_data, class)
 unique(dtypes)
-
+table(dtypes)
 ### FACTOR VARIABLES ############################
 
 str(all_data[,which(sapply(all_data, class) == "factor")])

@@ -72,40 +72,37 @@ factor_ind <- unname(which(sapply(cleaned_data_X, class) == "factor"))
 numeric_data <- cleaned_data_X[,-factor_ind]
 
 
-pcs <- princomp(numeric_data)
+pcs <- prcomp(numeric_data, scale=TRUE, center=TRUE)
 
 
-# select the M prin comps that explain 99% of the variance
-total.var = sum(pcs$sd^2)
-pct.var = pcs$sd^2/total.var
-n.99 <- which(cumsum(pct.var)>= .99)[1]
+# select the M prin comps that explain 95% of the variance
+total.var = sum(pcs$sdev^2)
+pct.var = pcs$sdev^2/total.var
+n.95 <- which(cumsum(pct.var)>= .95)[1]
 
-# transform the numeric training vars
-num_train.transformed <- pcs$scores[,1:n.99]
 
 # recompose the data frame
-transformed_data_train <- cleaned_training[,factor_ind]
-transformed_data_train$pc1 <- num_train.transformed
+transformed_data_train <- cbind(pcs$x[,1:n.95], cleaned_data_X[,factor_ind])
 transformed_data_train$target <- cleaned_data_y
+save(transformed_data_train,file="PCA_data_train.rdata")
+rm(transformed_data_train)
 
 
 # do it to the test set too
 cleaned_data_X_test <- cleaned_test
 cleaned_data_X_test$target <- NULL
-cleaned_data_y_test <- cleaned_test$target
 
 factor_ind_test <- unname(which(sapply(cleaned_data_X_test, class) == "factor"))
 numeric_data_test <- cleaned_data_X_test[,-factor_ind_test]
 
-num_test.transformed <- predict(pcs,numeric_data_test)[,1:n.99]
+pcs_test <- predict(pcs,numeric_data_test)
+pcs_test <- as.data.frame(pcs_test)[,1:n.95]
 
-transformed_data_test<- cleaned_data_X_test[,factor_ind_test]
-transformed_data_test$pc1 <- num_test.transformed
-
+transformed_data_test <- cbind(pcs_test, cleaned_data_X_test[,factor_ind_test])
 
 
 # PCA data set we want to work with:
-save(transformed_data_train,file="PCA_data_train.rdata")
+
 save(transformed_data_test,file="PCA_data_test.rdata")
 rm(list=ls())
 
