@@ -53,6 +53,3 @@ colnames(submission) <- c('ID','target')
 subname = sprintf("rf_chunk_reduced_%03d.csv", ntree)
 write.csv(submission, subname, row.names=FALSE)
 
-
-end.time <-proc.time() - start.time
-end.time 
