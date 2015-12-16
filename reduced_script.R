@@ -13,8 +13,10 @@ load("~/UIUC/STAT542/reduced_data_train.rdata")
 
 reduced_data_train$target <- as.factor(reduced_data_train$target)
 
+#Randomly sampling 10% of reduced_data_train
 s_1 = reduced_data_train[sample(nrow(reduced_data_train),15000), ]
 
+#Randomly sampling 50% of reduced_data_train
 s_half = reduced_data_train[sample(nrow(reduced_data_train),72615), ]
 
 rm(reduced_data_train)
@@ -22,6 +24,7 @@ rm(reduced_data_train)
 # Start the clock!
 ptm <- proc.time()
 
+#Running Random Forest with its default settings and 800 trees on tenth the reduced_data_train
 rf1 <- foreach(ntree=rep(400, 2), .combine=combine, .packages='randomForest', .multicombine=TRUE) %dopar% randomForest(s_1[,1:1021], s_1$target, ntree=ntree, mtry=28);
 
 # Stop the clock
@@ -31,6 +34,7 @@ time1.p
 # Start the clock!
 ptm <- proc.time()
 
+#Running Random Forest with its default settings and 800 trees on half the reduced_data_train
 rfhalf <- foreach(ntree=rep(400, 2), .combine=combine, .packages='randomForest', .multicombine=TRUE) %dopar% randomForest(s_half[,1:1021], s_half$target, ntree=ntree, mtry=28);
 
 # Stop the clock
@@ -54,7 +58,7 @@ getConfusionMatrix <- function(rf) {
   return(cbind(tbl, class.error))
 }
 
-
+#Generating Confusion matrices
 rf1$confusion <- getConfusionMatrix(rf1)
 rfhalf$confusion <- getConfusionMatrix(rfhalf)
 
@@ -62,10 +66,12 @@ save(list = ls(all.names = TRUE), file = "red_bench.RData", envir = .GlobalEnv)
 
 load("~/UIUC/STAT542/reduced_data_test.rdata")
 
+#Predicting using the model built on tenth the reduced_data_train
 pred_red_10 = predict(rf1, reduced_data_test, type="prob")
 red_10 <- as.data.frame(pred_red_10[,2])
 write.csv(red_10,"red_10.csv")
 
+#Predicting using the model built on half the reduced_data_train
 pred_red_50 = predict(rfhalf, reduced_data_test, type="prob")
 red_50 <- as.data.frame(pred_red_50[,2])
 write.csv(red_50,"red_50.csv")
