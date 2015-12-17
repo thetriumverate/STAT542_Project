@@ -17,11 +17,23 @@
 	* ~ 28 minute runtime
 
 3. 'xgboost.R' 
-	* Performs xgboost method on PCA data and original dataset
+	* Performs XGBoost method on PCA data and original dataset
 	* When running on the original dataset, the data is chunked into different subsets and then the xgboost is run on each subset and averaged
 
 4. 'xgboost_bag.R'
-	* Performs xgboost using bagging on the original dataset
+	* Performs XGBoost using bagging on the original dataset
+
+5. 'pca_script.R'
+	* Generates a Random Forest (in parallel) on 10% and 50% of the PCA data
+	* Then predicts on test data and writes csv's
+
+6. 'reduced_script.R'
+	* Generates a Random Forest (in parallel) on 10% and 50% of the reduced data
+	* Then predicts on test data and writes csv's
+
+7. 'xgb_bench.R'
+	* Performs XGBoost on 50% and 100% of the reduced data
+	* Then predicts on test data and writes csv's
 
 ### References 
 
