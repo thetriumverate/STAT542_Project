@@ -1,28 +1,6 @@
 # STAT542_Project
 
 ##### Final Project for STAT542: [Springleaf Kaggle Competition](https://www.kaggle.com/c/springleaf-marketing-response)
-
-### TO DO
-
-1. **Clean and Prepare Data** (see [here](https://www.kaggle.com/darraghdog/springleaf-marketing-response/explore-springleaf/notebook))
-	* Impute numeric Variables
-	* Collapse Levels of Categorical Variables (including parsing dates)
-	* Remove problem variables
-	* Remove Redundant Variables
-
-2. **Dimension Reduction**
-	* Factor analysis/PCA (although Brieman says "dimensionality can be a blessing")
-	* Variable Selection
-
-3. **Algorithm Implementation**
-	* Split data into samples
-	* Construct one tree per sample
-	* Combine trees into forest
-
-4. **Benchmarking**
-	* Check our algorithm vs. Random Forest on subset
-	* other methods
-
 ### CODE
 1. `clean_prep.R`
 	* must change the working directory in script (but that's it) to the location of *train.csv* and *test.csv*
@@ -37,6 +15,13 @@
 	* outputs final files *reduced_data_train.rdata* and *reduced_data_test.rdata* which correspond to the data with redundant variables removed
 	* outputs final files *PCA_data_train.rdata* and *PCA_data_test* which correspond to the PCA transformed data (numeric variables only)
 	* ~ 28 minute runtime
+
+3. 'xgboost.R' 
+	* Performs xgboost method on PCA data and original dataset
+	* When running on the original dataset, the data is chunked into different subsets and then the xgboost is run on each subset and averaged
+
+4. 'xgboost_bag.R'
+	* Performs xgboost using bagging on the original dataset
 
 ### References 
 
