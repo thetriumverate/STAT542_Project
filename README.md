@@ -8,7 +8,7 @@
 	* outputs final file *cleaned_data.rdata*
 	* ~24 minute runtime
 
-2. `dim_reduction.R` - **in progress**
+2. `dim_reduction.R` 
 	* again must change the working directory to where *cleaned_data.rdata* lives
 	* Removes highly correlated variables and performs PCA
 	* outputs intermediate file *corr_matrix.rdata*
