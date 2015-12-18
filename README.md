@@ -16,24 +16,32 @@
 	* outputs final files *PCA_data_train.rdata* and *PCA_data_test* which correspond to the PCA transformed data (numeric variables only)
 	* ~ 28 minute runtime
 
-3. 'xgboost.R' 
+3. `xgboost.R`
 	* Performs XGBoost method on PCA data and original dataset
 	* When running on the original dataset, the data is chunked into different subsets and then the xgboost is run on each subset and averaged
 
-4. 'xgboost_bag.R'
+4. `xgboost_bag.R`
 	* Performs XGBoost using bagging on the original dataset
 
-5. 'pca_script.R'
+5. `pca_script.R`
 	* Generates a Random Forest (in parallel) on 10% and 50% of the PCA data
 	* Then predicts on test data and writes csv's
 
-6. 'reduced_script.R'
+6. `reduced_script.R`
 	* Generates a Random Forest (in parallel) on 10% and 50% of the reduced data
 	* Then predicts on test data and writes csv's
 
-7. 'xgb_bench.R'
+7. `xgb_bench.R`
 	* Performs XGBoost on 50% and 100% of the reduced data
 	* Then predicts on test data and writes csv's
+	
+8. `rf_by_chunk.R`
+	* Splits the redundancy reduced data into n chunks 
+	* Loads in each chunk, gets prediction, and aggregats
+
+9. `our_method.R`
+	* splits data into n bootstrap samples of size samp.size and dimension mtry
+	* predicts using decision trees on each sample and aggregates predictions
 
 ### References 
 
